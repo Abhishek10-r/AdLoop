@@ -1,9 +1,0 @@
-[
-  "tests/test_agents.py::test_full_campaign_runs_end_to_end_in_mock_mode",
-  "tests/test_agents.py::test_generate_synthetic_performance_shapes",
-  "tests/test_agents.py::test_researcher_agent_mock_mode_returns_string",
-  "tests/test_agents.py::test_safe_json_extract_falls_back_on_garbage",
-  "tests/test_agents.py::test_safe_json_extract_parses_clean_json",
-  "tests/test_agents.py::test_safe_json_extract_parses_json_wrapped_in_prose",
-  "tests/test_agents.py::test_strategist_agent_mock_mode_returns_brief"
-]
