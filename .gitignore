@@ -1,9 +1,2 @@
-__pycache__/
-*.pyc
-.ipynb_checkpoints/
-.env
-*.csv
-.DS_Store
-venv/
-.venv/
-*.egg-info/
+# Created by pytest automatically.
+*
