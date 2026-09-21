@@ -4,7 +4,7 @@ A working multi-agent system where specialised AI agents — **Researcher, Strat
 
 Give it one product description. It hands back a fully reviewed, two-round campaign — and shows its work at every step.
 
-> Runs against **Vertex AI (Gemini)** or the **Anthropic API (Claude)**, or in **MOCK_MODE** with zero keys and zero cost — so anyone can clone this and watch the full architecture run end to end before spending a cent.
+> Runs against **Gemini** (Vertex AI or the Gemini API) or the **Anthropic API (Claude)**, or in **MOCK_MODE** with zero keys and zero cost — so anyone can clone this and watch the full architecture run end to end before spending a cent.
 
 ---
 
@@ -47,7 +47,9 @@ flowchart TD
 ## Features
 
 - ✅ Full multi-agent orchestration with a genuine revision loop and feedback loop
-- ✅ Two interchangeable LLM backends: **Vertex AI (Gemini)** and **Anthropic (Claude)**, behind one `complete()` interface
+- ✅ Three interchangeable LLM backends — **Vertex AI**, the **Gemini API** and **Anthropic (Claude)** — behind one `complete()` interface
+- ✅ **LLM-as-a-judge evaluation** against human labels: agreement, precision/recall and Cohen's kappa
+- ✅ Optional **LangSmith tracing** of every agent call
 - ✅ Retry logic with exponential backoff on every LLM call
 - ✅ Defensive structured-output parsing (`safe_json_extract`) with tested fallback behaviour, not silent failure
 - ✅ Human-in-the-loop approval gate before anything counts as "published"
@@ -161,12 +163,12 @@ AdLoop/
 ├── requirements.txt
 ├── .env.example
 ├── src/
-│   ├── config.py            # backend selection: Vertex / Anthropic / MOCK_MODE
+│   ├── config.py            # backend selection: Vertex / Gemini API / Anthropic / MOCK_MODE
 │   ├── schemas.py
 │   ├── utils.py             # safe_json_extract
 │   ├── evaluation.py        # agreement, precision/recall, Cohen's kappa
 │   ├── agents/
-│   │   ├── base.py          # shared retry + mock logic
+│   │   ├── base.py          # shared retry, mock and LangSmith tracing logic
 │   │   ├── researcher.py
 │   │   ├── strategist.py
 │   │   ├── writer.py
