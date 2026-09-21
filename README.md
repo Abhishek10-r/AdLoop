@@ -100,6 +100,22 @@ python -m pytest -q
 
 ---
 
+## Evaluating the judge
+
+The Editor is an **LLM-as-a-judge**: it scores each draft against the brief and returns a structured pass/fail verdict. A judge is only useful if it agrees with a person, so `evaluate_judge.py` measures that.
+
+```bash
+python evaluate_judge.py generate   # writes eval/to_label.csv (48 drafts)
+# label the human_label column yourself: pass / fail for THIS brief
+python evaluate_judge.py score      # runs the Editor and compares it to you
+```
+
+`generate` pairs half the drafts with the brief they were written for and half with a different brief, so there are genuinely off-brief drafts to catch. Which is which lives in `eval/answer_key.csv`, not in the file you label, so it can't bias your labels.
+
+`score` reports agreement, precision / recall / F1 for **fail** (the rare, costly case the judge exists to catch) and **Cohen's kappa**, which corrects for chance agreement — a judge that approves everything can still score high raw agreement, but its kappa is zero. Both steps need a live backend; mock mode is refused because the mock Editor answers at random.
+
+---
+
 ## Tech Stack
 
 | Layer | Choice |
@@ -120,12 +136,14 @@ Adding a third backend means writing one class with a `complete(system_prompt, u
 AdLoop/
 ├── README.md
 ├── main.py                  # run a full two-round campaign end to end
+├── evaluate_judge.py        # measure the Editor (LLM-as-a-judge) against human labels
 ├── requirements.txt
 ├── .env.example
 ├── src/
 │   ├── config.py            # backend selection: Vertex / Anthropic / MOCK_MODE
 │   ├── schemas.py
 │   ├── utils.py             # safe_json_extract
+│   ├── evaluation.py        # agreement, precision/recall, Cohen's kappa
 │   ├── agents/
 │   │   ├── base.py          # shared retry + mock logic
 │   │   ├── researcher.py
@@ -167,7 +185,6 @@ The performance figures are **synthetic**, generated in `src/performance.py` —
 - [ ] Real performance data via the Google Ads or Meta Marketing API, replacing the synthetic generator
 - [ ] Real web search for the Researcher agent (Tavily / SerpAPI) instead of relying on the model's own knowledge
 - [ ] Fully dynamic orchestration — let the Manager itself be an LLM decision at each step, not a mostly-fixed sequence
-- [ ] An evaluation rubric scoring each round against the brief, so revisions are measured rather than felt
 - [ ] A Streamlit UI for the human-approval step
 - [ ] A dedicated guardrails/compliance check, separate from brand-voice editing
 - [ ] Persistent memory (vector DB) so the Strategist can retrieve what worked on similar past campaigns
