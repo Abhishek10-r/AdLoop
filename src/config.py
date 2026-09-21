@@ -22,7 +22,9 @@ import os
 
 # Model per backend.
 MODEL = "claude-sonnet-5"          # Anthropic
-VERTEX_MODEL = "gemini-2.5-flash"  # Vertex AI
+# Google retires Gemini model versions regularly; override with GEMINI_MODEL
+# rather than editing code when the default stops being available.
+VERTEX_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")  # Vertex AI / Gemini API
 VERTEX_LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
 
 MOCK_MODE = False

@@ -142,14 +142,14 @@ python evaluate_judge.py score      # runs the Editor and compares it to you
 
 | Layer | Choice |
 |---|---|
-| LLM | Gemini (`gemini-2.5-flash`, via Vertex AI or the Gemini API) or Anthropic (`claude-sonnet-5`) |
+| LLM | Gemini (`gemini-3.6-flash`, via Vertex AI or the Gemini API) or Anthropic (`claude-sonnet-5`) |
 | Tracing | LangSmith (optional) |
 | Language | Python 3.10+ |
 | Data validation | `dataclasses` + a defensive JSON-extraction utility |
 | Visualisation | `matplotlib`, `pandas` |
 | Notebook environment | Google Colab / Jupyter |
 
-Adding a third backend means writing one class with a `complete(system_prompt, user_message, max_tokens)` method in `src/config.py`; the agents never touch the provider SDK directly.
+Google retires Gemini model versions regularly: if the default stops working, set `GEMINI_MODEL` (e.g. `export GEMINI_MODEL=gemini-3.6-flash`) rather than editing code. Adding another backend means writing one class with a `complete(system_prompt, user_message, max_tokens)` method in `src/config.py`; the agents never touch the provider SDK directly.
 
 ---
 

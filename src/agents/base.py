@@ -1,19 +1,41 @@
 """Shared LLM-calling logic for every agent in the team."""
+import os
 import time
 from .. import config
+
+
+_warned_missing_langsmith_key = False
 
 
 def _traceable(name: str):
     """
     Wraps a call so it shows up as a run in LangSmith when tracing is on
-    (LANGSMITH_TRACING=true and LANGSMITH_API_KEY set). Without the langsmith
-    package it's a no-op, so tracing never becomes a hard dependency.
+    (LANGSMITH_TRACING=true and LANGSMITH_API_KEY set). Otherwise it's a no-op,
+    so tracing never becomes a hard dependency or a source of noisy errors.
     """
+    global _warned_missing_langsmith_key
+    tracing_on = os.environ.get("LANGSMITH_TRACING", "").strip().lower() == "true"
+    if not tracing_on:
+        return lambda fn: fn
+    if not os.environ.get("LANGSMITH_API_KEY", "").strip():
+        if not _warned_missing_langsmith_key:
+            print("LANGSMITH_TRACING is on but LANGSMITH_API_KEY is not set — tracing disabled.")
+            _warned_missing_langsmith_key = True
+        return lambda fn: fn
     try:
         from langsmith import traceable
     except ImportError:
         return lambda fn: fn
     return traceable(name=name, run_type="llm")
+
+
+def _is_permanent(error: Exception) -> bool:
+    """
+    True for client errors that retrying can't fix (bad model name, bad key,
+    malformed request). 429 rate limits are the exception: those are worth a retry.
+    """
+    code = getattr(error, "code", None) or getattr(error, "status_code", None)
+    return isinstance(code, int) and 400 <= code < 500 and code != 429
 
 
 class BaseAgent:
@@ -48,6 +70,9 @@ class BaseAgent:
             try:
                 return self._complete(user_message)
             except Exception as e:
+                if _is_permanent(e):
+                    raise RuntimeError(f"{self.name}: {config.PROVIDER} rejected the request "
+                                       f"(not retrying): {e}") from e
                 last_error = e
                 wait = 2 ** attempt
                 print(f"[{self.name}] {config.PROVIDER} API error "
