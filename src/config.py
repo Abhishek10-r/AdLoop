@@ -2,14 +2,16 @@
 Central configuration: which LLM backend to use, whether we're in MOCK_MODE,
 and the shared client.
 
-Two backends are supported:
+Three backends are supported:
 
-    LLM_PROVIDER=vertex      Gemini via Vertex AI on GCP   (application default
-                                                            credentials + project id)
-    LLM_PROVIDER=anthropic   Claude via the Anthropic API  (ANTHROPIC_API_KEY)
+    LLM_PROVIDER=vertex      Gemini via Vertex AI on GCP     (application default
+                                                              credentials + project id)
+    LLM_PROVIDER=gemini      Gemini via the Gemini API       (GEMINI_API_KEY from
+                                                              Google AI Studio)
+    LLM_PROVIDER=anthropic   Claude via the Anthropic API    (ANTHROPIC_API_KEY)
 
-Leave LLM_PROVIDER unset and the pipeline uses whichever is configured,
-preferring Vertex. If neither is available it runs in MOCK_MODE: the whole
+Leave LLM_PROVIDER unset and the pipeline uses whichever is configured, in the
+order above. If none is available it runs in MOCK_MODE: the whole
 workflow still executes end to end on canned responses, with no key and no cost.
 
 Every agent reads MOCK_MODE from this module at call time (not via
@@ -24,7 +26,7 @@ VERTEX_MODEL = "gemini-2.5-flash"  # Vertex AI
 VERTEX_LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
 
 MOCK_MODE = False
-PROVIDER = None   # "vertex" | "anthropic" | None while mocking
+PROVIDER = None   # "vertex" | "gemini" | "anthropic" | None while mocking
 client = None     # backend instance exposing .complete(system, user, max_tokens)
 
 
@@ -66,6 +68,19 @@ class VertexBackend:
             ),
         )
         return response.text
+
+
+class GeminiBackend(VertexBackend):
+    """
+    Same Gemini models through the Gemini Developer API, authenticated with an
+    API key from Google AI Studio - no Google Cloud project or gcloud needed.
+    """
+
+    name = "gemini"
+
+    def __init__(self, api_key: str):
+        from google import genai
+        self._client = genai.Client(api_key=api_key)
 
 
 class AnthropicBackend:
@@ -110,6 +125,27 @@ def _try_vertex() -> bool:
     return True
 
 
+def _try_gemini() -> bool:
+    """Returns True if the Gemini Developer API backend was configured successfully."""
+    global client, PROVIDER
+
+    api_key = _load_api_key("GEMINI_API_KEY") or _load_api_key("GOOGLE_API_KEY")
+    if not api_key:
+        return False
+    try:
+        client = GeminiBackend(api_key=api_key)
+    except ImportError:
+        print("`google-genai` not installed — skipping Gemini (pip install google-genai).")
+        return False
+    except Exception as e:
+        print(f"Gemini API unavailable ({e}) — skipping.")
+        return False
+
+    PROVIDER = "gemini"
+    print(f"Gemini API key detected — agents will call {VERTEX_MODEL}.")
+    return True
+
+
 def _try_anthropic() -> bool:
     """Returns True if the Anthropic backend was configured successfully."""
     global client, PROVIDER
@@ -141,12 +177,14 @@ def init():
 
     if requested == "vertex":
         ok = _try_vertex()
+    elif requested == "gemini":
+        ok = _try_gemini()
     elif requested == "anthropic":
         ok = _try_anthropic()
     elif requested in ("", "auto"):
-        ok = _try_vertex() or _try_anthropic()
+        ok = _try_vertex() or _try_gemini() or _try_anthropic()
     else:
-        print(f"Unknown LLM_PROVIDER={requested!r} — expected 'vertex' or 'anthropic'.")
+        print(f"Unknown LLM_PROVIDER={requested!r} — expected 'vertex', 'gemini' or 'anthropic'.")
         ok = False
 
     if not ok:

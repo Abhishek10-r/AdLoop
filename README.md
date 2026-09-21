@@ -69,7 +69,14 @@ python main.py "A cold-brew coffee subscription for office workers"
 
 ### Running against a real model
 
-**Vertex AI (Gemini)** — authenticates with application default credentials, so there is no key to paste:
+**Gemini API (quickest)** — a free key from [Google AI Studio](https://aistudio.google.com/apikey), no Google Cloud setup:
+
+```bash
+export GEMINI_API_KEY="..."
+python main.py
+```
+
+**Vertex AI (Gemini on Google Cloud)** — authenticates with application default credentials, so there is no key to paste:
 
 ```bash
 gcloud auth application-default login
@@ -86,7 +93,20 @@ export LLM_PROVIDER=anthropic
 python main.py
 ```
 
-With neither configured, the pipeline says so and runs in `MOCK_MODE`.
+With none configured, the pipeline says so and runs in `MOCK_MODE`.
+
+### Tracing with LangSmith
+
+Every agent call is wrapped as a LangSmith run, named after the agent (Researcher, Strategist, Writer, Editor, Analyst), so a full campaign shows up as a trace you can inspect prompt by prompt:
+
+```bash
+export LANGSMITH_TRACING=true
+export LANGSMITH_API_KEY="..."      # free account at smith.langchain.com
+export LANGSMITH_PROJECT=adloop
+python main.py
+```
+
+Tracing is off unless you turn it on, and without the `langsmith` package installed the wrapper is a no-op.
 
 ### Notebook
 
@@ -120,7 +140,8 @@ python evaluate_judge.py score      # runs the Editor and compares it to you
 
 | Layer | Choice |
 |---|---|
-| LLM | Vertex AI (`gemini-2.5-flash`) or Anthropic (`claude-sonnet-5`) |
+| LLM | Gemini (`gemini-2.5-flash`, via Vertex AI or the Gemini API) or Anthropic (`claude-sonnet-5`) |
+| Tracing | LangSmith (optional) |
 | Language | Python 3.10+ |
 | Data validation | `dataclasses` + a defensive JSON-extraction utility |
 | Visualisation | `matplotlib`, `pandas` |
